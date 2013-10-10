@@ -1,0 +1,128 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:simpleType name="ParameterType">
+		<xs:restriction base="xs:NMTOKEN">
+			<xs:enumeration value="Integer" />
+			<xs:enumeration value="Boolean" />
+			<xs:enumeration value="Currency" />
+			<xs:enumeration value="Date" />
+			<xs:enumeration value="Decimal" />
+			<xs:enumeration value="VarChar" />
+			<xs:enumeration value="Variant" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="safeQueryGen">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element minOccurs="1" maxOccurs="1" ref="connection" />
+				<xs:element minOccurs="0" maxOccurs="1" ref="global" />
+				<xs:choice minOccurs="1" maxOccurs="unbounded">
+					<xs:element ref="query" />
+					<xs:element ref="table" />
+					<xs:element ref="dataSet" />
+				</xs:choice>
+			</xs:sequence>
+			<xs:attribute name="reference" type="xs:normalizedString" />
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="global">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element minOccurs="0" maxOccurs="1" name="connection" type="xs:string" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="connection">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element minOccurs="0" maxOccurs="1" ref="connectionString" />
+			</xs:sequence>
+			<xs:attribute name="src" type="xs:string" />
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="connectionString" type="xs:string" />
+	<xs:element name="query">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element minOccurs="0" maxOccurs="unbounded" ref="parameter" />
+				<xs:element minOccurs="0" maxOccurs="unbounded" ref="rename" />
+				<xs:element minOccurs="0" maxOccurs="unbounded" ref="lookup" />
+				<xs:element minOccurs="0" maxOccurs="unbounded" ref="calcField" />
+				<xs:element minOccurs="1" maxOccurs="1" ref="sql" />
+			</xs:sequence>
+			<xs:attribute name="name" type="xs:NMTOKEN" use="required" />
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="sql" type="xs:string" />
+	<xs:element name="parameter">
+		<xs:complexType>
+			<xs:simpleContent>
+				<xs:extension base="xs:string">
+					<xs:attribute name="name" type="xs:NMTOKEN" use="required" />
+					<xs:attribute name="type" type="ParameterType" use="required" />
+					<xs:attribute name="size" type="xs:int" use="optional" />
+				</xs:extension>
+			</xs:simpleContent>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="rename">
+		<xs:complexType>
+			<xs:simpleContent>
+				<xs:extension base="xs:string">
+					<xs:attribute name="targetName" type="xs:NMTOKEN" use="required" />
+					<xs:attribute name="newName" type="xs:NMTOKEN" use="required" />
+				</xs:extension>
+			</xs:simpleContent>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="lookup">
+		<xs:complexType>
+			<xs:simpleContent>
+				<xs:extension base="xs:string">
+					<xs:attribute name="name" type="xs:NMTOKEN" use="required" />
+					<xs:attribute name="localKeyFields" type="xs:string" use="required" />
+					<xs:attribute name="lookupKeyFields" type="xs:string" use="optional" />
+					<xs:attribute name="lookupResultField" type="xs:NMTOKEN" use="required" />
+					<xs:attribute name="dataSetRef" type="xs:string" use="optional" />
+					<xs:attribute name="dataSet" type="xs:NMTOKEN" use="optional" />
+					<xs:attribute name="type" type="xs:NMTOKEN" />
+				</xs:extension>
+			</xs:simpleContent>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="calcField">
+		<xs:complexType>
+			<xs:attribute name="name" type="xs:NMTOKEN" />
+			<xs:attribute name="type" type="ParameterType" />
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="dataSet">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element minOccurs="0" maxOccurs="unbounded" ref="lookup" />
+				<xs:element minOccurs="0" maxOccurs="unbounded" ref="calcField" />
+				<xs:element minOccurs="1" maxOccurs="unbounded" ref="command" />
+			</xs:sequence>
+			<xs:attribute name="name" type="xs:NMTOKEN" use="required" />
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="command">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element minOccurs="0" maxOccurs="unbounded" ref="parameter" />
+				<xs:element minOccurs="1" maxOccurs="1" ref="sql" />
+			</xs:sequence>
+			<xs:attribute name="name" type="xs:NMTOKEN" use="required" />
+			<xs:attribute name="methodName" type="xs:NMTOKEN" use="required" />
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="table">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element minOccurs="0" maxOccurs="unbounded" ref="rename" />
+			</xs:sequence>
+			<xs:attribute name="name" type="xs:NMTOKEN" use="required" />
+			<xs:attribute name="tableName" type="xs:NMTOKEN" use="optional" />
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

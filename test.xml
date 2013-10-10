@@ -1,0 +1,277 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<safeQueryGen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="//ws2003/shared/it/SafeQueryGen.xsd">
+	<connection>
+		<connectionString>
+			<![CDATA[
+Provider=Microsoft.Jet.OLEDB.4.0;
+Data Source=reference.mdb;
+Mode=Share Deny None;
+Jet OLEDB:Engine Type=5;
+			]]>
+		</connectionString>
+	</connection>
+	<global>
+		<connection><![CDATA[DataModule_Main->ADOConnection]]></connection>
+	</global>
+	<query name="Operation">
+		<rename targetName="State" newName="OperationState" />
+		<lookup name="TypeName" localKeyFields="Type" lookupKeyFields="Type1" lookupResultField="Name" dataSet="TOperationType" />
+		<calcField name="StoreID" />
+		<sql>
+			<![CDATA[
+PARAMETERS @OperationID INT;
+SELECT
+	OperationID,
+	ClientID,
+	StoreID,
+	SupplierID,
+	Points,
+	Amount,
+	OperationDay,
+	ReportMonth,
+	Operation.Type,
+	OperationType.Type AS TypeName,
+	State,
+	Remarks
+FROM Operation INNER JOIN OperationType ON Operation.Type = OperationType.Type
+WHERE OperationID = @OperationID]]>
+		</sql>
+	</query>
+	<table name="OperatorTable" tableName="Operator" >
+		<rename targetName="Operator" newName="OperatorID" />
+	</table>
+	<table name="TOperationType" tableName="OperationType" />
+	<query name="TRanksQuery">
+		<sql>SELECT Rank, Name FROM Rank</sql>
+	</query>
+	<query name="TOrderAddon">
+		<sql>
+			<![CDATA[
+SELECT OperationID AS Operation, ProductCost, Paid, FormalClient
+FROM OrderAddon --fsdfdsf]]>
+		</sql>
+	</query>
+	<table tableName="DiscountType" typeIdentifier="TDiscountTypes" />
+	<query name="xxx">
+		<parameter name="OperationID" type="Integer" />
+		<sql>DELETE FROM OrderAddon WHERE OperationID = @OperationID</sql>
+	</query>
+	<query name="DiscountAddon">
+		<parameter name="OperationID" type="Integer" />
+		<sql>
+			<![CDATA[
+SELECT OperationID, ApplyOrder, Type, Amount, Amount AS [Percent]
+FROM DiscountAddon
+WHERE OperationID = @OperationID
+ORDER BY ApplyOrder]]>
+		</sql>
+	</query>
+	<query name="OrderAddon">
+		<parameter name="OperationID" type="Integer" />
+		<sql>
+			<![CDATA[
+SELECT
+	OperationID,
+	ProductCost,
+	Paid,
+	FormalClient
+FROM OrderAddon
+WHERE OperationID = @OperationID]]>
+		</sql>
+	</query>
+	<query name="ProductTransactionsForOperation">
+		<parameter name="OperationID" type="Integer" />
+		<rename targetName="State" newName="TransactionState" />
+		<sql>
+			<![CDATA[
+SELECT
+	TransactID,
+	Type,
+	StoreID,
+	CreditorID,
+	CreditorAccountID,
+	DebitorID,
+	DebitorAccountID,
+	OperationID,
+	Points,
+	Amount,
+	OperationDay,
+	State
+FROM Transact
+WHERE Type = 1 AND OperationID = @OperationID]]>
+		</sql>
+	</query>
+	<query name="CashTransactionForOperation">
+		<parameter name="OperationID" type="Integer" />
+		<rename targetName="State" newName="TransactionState" />
+		<sql>
+			<![CDATA[
+SELECT
+	TransactID,
+	Type,
+	StoreID,
+	CreditorID,
+	CreditorAccountID,
+	DebitorID,
+	DebitorAccountID,
+	OperationID,
+	Points,
+	Amount,
+	OperationDay,
+	State
+FROM Transact
+WHERE Type = 0 AND 
+	DebitorAccountID <> 4 AND CreditorAccountID <> 3 AND
+	OperationID = @OperationID]]>
+		</sql>
+	</query>
+	<query name="PaymentTransactionForOperation">
+		<parameter name="OperationID" type="Integer" />
+		<rename targetName="State" newName="TransactionState" />
+		<sql>
+			<![CDATA[
+SELECT
+	TransactID,
+	Type,
+	StoreID,
+	CreditorID,
+	CreditorAccountID,
+	DebitorID,
+	DebitorAccountID,
+	OperationID,
+	Points,
+	Amount,
+	OperationDay,
+	State
+FROM Transact
+WHERE
+	(DebitorAccountID = 4 OR CreditorAccountID = 3) AND
+	OperationID = @OperationID]]>
+		</sql>
+	</query>
+	<query name="InsertDiscount">
+		<parameter name="OperationID" type="Integer" />
+		<parameter name="ApplyOrder" type="Integer" />
+		<parameter name="Type" type="Integer" />
+		<parameter name="Amount" type="Currency" />
+		<sql>
+			<![CDATA[
+INSERT INTO DiscountAddon (OperationID, ApplyOrder, Type, Amount)
+VALUES (@OperationID, @ApplyOrder, @Type, @Amount)]]>
+		</sql>
+	</query>
+	<query name="DeleteDiscounts">
+		<parameter name="OperationID" type="Integer" />
+		<sql>DELETE FROM DiscountAddon WHERE OperationID = @OperationID</sql>
+	</query>
+	<query name="DeleteMoneyTransactions">
+		<parameter name="OperationID" type="Integer" />
+		<sql>DELETE FROM Transact WHERE Type = 0 AND OperationID = @OperationID</sql>
+	</query>
+	<dataSet name="Operations">
+		<command name="OpenNonEditableCmd" methodName="OpenNonEditable">
+			<parameter name="OperationID" type="Integer" />
+			<sql>
+				<![CDATA[
+SELECT
+	1 - IsFirstPersonRow AS DblPerson, [Number], ParentID, [Level], Addon,
+	IssueList.PersonID, LastName & ' ' & FirstName & ' ' & MiddleName AS FullName,
+	MoneyGalka, MoneyTransactID, IssueAmount, CSng(0) AS AccountAmount,
+	ProductGalka, ProductTransactID, IssueList.ProductID, Product.[Name] AS ProductName,
+	IssueQuantity, 0 AS AccountQuantity, 0 AS StoreQuantity
+FROM
+		((SELECT
+			IIF(TransactProduct.ProductID = FirstRowsTable.MinProductID, 1, 0) AS IsFirstPersonRow,
+			[Number], ParentID, [Level], Trusts AS Addon, TransactProduct.PersonID,
+			IIF(IssueAmount IS NULL OR IssueAmount = 0, 0, 1) AS MoneyGalka,
+			MoneyTransactID, IssueAmount,
+			IIF(Quantity = 0, 0, 1) AS ProductGalka,
+			TransactProduct.TransactID AS ProductTransactID, TransactProduct.ProductID,
+			Quantity AS IssueQuantity
+		FROM
+			((( -- Продуктовые транзакции этой операции
+				SELECT Transact.TransactID, DebitorID AS PersonID, ProductID, Quantity
+				FROM Transact
+					INNER JOIN TransactProduct ON Transact.TransactID = TransactProduct.TransactID
+				WHERE Transact.OperationID = @OperationID
+			) AS TransactProduct
+			LEFT JOIN
+			( -- Первый продукт из продуктовых транзакций этой операции (для определения первой записи ЧК)
+				SELECT DebitorID AS PersonID, MIN(ProductID) AS MinProductID
+				FROM Transact
+					INNER JOIN TransactProduct ON Transact.TransactID = TransactProduct.TransactID
+				WHERE Transact.OperationID = @OperationID
+				GROUP BY DebitorID
+			) AS FirstRowsTable ON FirstRowsTable.PersonID = TransactProduct.PersonID
+			)LEFT JOIN ListIssueAddon ON
+				(ListIssueAddon.PersonID = TransactProduct.PersonID AND
+				(ListIssueAddon.OperationID = @OperationID OR ListIssueAddon.OperationID IS NULL))
+			)LEFT JOIN
+			( -- Денежные проводки
+				SELECT TransactID AS MoneyTransactID, DebitorID, Amount AS IssueAmount
+				FROM Transact
+				WHERE OperationID = @OperationID AND Type = 0 -- Денежная проводка
+			) AS MoneyTransact ON MoneyTransact.DebitorID = TransactProduct.PersonID
+
+	UNION ALL
+		/*
+		Цепляем чисто денежные выдачи, т.к. они небыли подцеплены в предыдущем запросе
+		*/
+		SELECT
+			1, [Number], ParentID, [Level], Trusts AS Addon, DebitorID,
+			IIF(IssueAmount IS NULL OR IssueAmount = 0, 0, 1) AS MoneyGalka,
+			MoneyTransactID, IssueAmount,
+			0, NULL, NULL, 0
+		FROM
+			(
+				SELECT MoneyTransact.TransactID AS MoneyTransactID, MoneyTransact.DebitorID,
+					MoneyTransact.Amount AS IssueAmount
+				FROM
+					(
+						SELECT DebitorID, TransactID, Amount
+						FROM Transact
+						WHERE OperationID = @OperationID AND Type = 0 -- денежная проводка
+					) AS MoneyTransact
+					LEFT JOIN
+					(
+						SELECT DebitorID, TransactID, Amount
+						FROM Transact
+						WHERE OperationID = @OperationID AND Type = 1 -- продуктовая проводка
+					) AS ProductTransact ON
+						(ProductTransact.DebitorID = MoneyTransact.DebitorID AND
+						ProductTransact.TransactID IS NULL) -- берем чисто денежные
+			) AS MoneyTransact
+			LEFT JOIN ListIssueAddon ON
+				(ListIssueAddon.PersonID = MoneyTransact.DebitorID AND
+				(ListIssueAddon.OperationID = @OperationID OR ListIssueAddon.OperationID IS NULL))
+	UNION ALL
+		/*
+		Цепляем корневой элемент (нужен для алгоритмов обработки списка)
+		*/
+		SELECT
+			1, [Number], ParentID, [Level], Trusts AS Addon, PersonID,
+			0, NULL, 0, 0, NULL, NULL, 0
+		FROM
+			(
+				SELECT *
+				FROM ListIssueAddon
+				WHERE OperationID = @OperationID
+			) AS ListIssueAddon
+			LEFT JOIN
+			(
+				SELECT DISTINCT DebitorID
+				FROM Transact
+				WHERE OperationID = @OperationID
+			) AS DebitTransact ON (DebitTransact.DebitorID = ListIssueAddon.PersonID AND
+				DebitTransact.DebitorID IS NULL)
+	) AS IssueList
+	LEFT JOIN Person ON Person.PersonID = IssueList.PersonID)
+	LEFT JOIN Product ON Product.ProductID = IssueList.ProductID
+ORDER BY [Number] ASC, IssueList.PersonID ASC, IssueList.ProductID ASC]]>
+			</sql>
+		</command>
+		<command name="OpenEditable" methodName="OpenEditableCmd">
+			<sql></sql>
+		</command>
+	</dataSet>
+</safeQueryGen>
